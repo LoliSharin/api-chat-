@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(cuid())
+  username  String    @unique
+  email     String    @unique
+  createdAt DateTime  @default(now())
+  Chats     ChatParticipant[]
+  Messages  Message[]
+
+  reactions Reaction[]
+}
+
+model Chat {
+  id          String             @id @default(cuid())
+  type        ChatType
+  name        String
+  description String?
+  createdAt   DateTime           @default(now())
+  participants ChatParticipant[]
+  messages    Message[]
+  pinnedMessages PinnedMessage[]
+}
+
+model ChatParticipant {
+  id       String   @id @default(cuid())
+  chat     Chat     @relation(fields: [chatId], references: [id])
+  chatId   String
+  user     User     @relation(fields: [userId], references: [id])
+  userId   String
+  role     ParticipantRole @default(PARTICIPANT)
+  joinedAt DateTime @default(now())
+
+  @@unique([chatId, userId])
+}
+
+model Message {
+  id            String    @id @default(cuid())
+  chat          Chat      @relation(fields: [chatId], references: [id])
+  chatId        String
+  user          User      @relation(fields: [userId], references: [id])
+  userId        String
+  text          String
+  encryptedBody Bytes
+  iv            Bytes     
+  createdAt     DateTime  @default(now())
+  repliedToId   String?   // reply
+  repliedTo     Message?  @relation("MessageReplies", fields: [repliedToId], references: [id])
+  reactions     Reaction[]
+  attachments   ChatFile[] @relation("MessageFiles")
+  isRead        Boolean   @default(false)
+
+  messages Message[] @relation("MessageReplies")
+
+  pinnedMessages PinnedMessage[]
+}
+
+model ChatFile {
+  id        String   @id @default(cuid())
+  message   Message? @relation("MessageFiles", fields: [messageId], references: [id])
+  messageId String?
+  path      String
+  mimeType  String
+  size      Int
+  createdAt DateTime @default(now())
+}
+
+model Reaction {
+  id        String   @id @default(cuid())
+  message   Message  @relation(fields: [messageId], references: [id])
+  messageId String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  type      String
+  createdAt DateTime @default(now())
+
+  @@unique([messageId, userId, type])
+}
+
+model PinnedMessage {
+  id        String   @id @default(cuid())
+  chat      Chat     @relation(fields: [chatId], references: [id])
+  chatId    String
+  message   Message  @relation(fields: [messageId], references: [id])
+  messageId String
+  pinnedBy  String
+  pinnedAt  DateTime @default(now())
+}
+
+enum ChatType {
+  SINGLE
+  GROUP
+}
+
+enum ParticipantRole {
+  OWNER
+  ADMIN
+  PARTICIPANT
+}

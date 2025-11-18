@@ -1,0 +1,7 @@
+Generated scaffold: NestJS + Prisma + Postgres + Docker
+
+Next steps:
+- Run npm install
+- Configure .env (copy .env.example)
+- Run prisma generate & migrate
+- Start in dev with npm run start:dev or via docker compose
